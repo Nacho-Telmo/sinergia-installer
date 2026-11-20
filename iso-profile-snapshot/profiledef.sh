@@ -3,8 +3,8 @@
 
 iso_name="SinergiaLinux"
 iso_label="SINERGIA_$(date --date="@${SOURCE_DATE_EPOCH:-$(date +%s)}" +%Y%m)"
-iso_publisher="Arch Linux <https://archlinux.org>"
-iso_application="Arch Linux Live/Rescue DVD"
+iso_publisher="Sinergia Comunidad Linuxera <https://github.com/Nacho-Telmo>"
+iso_application="Sinergia Linux Live/Install DVD"
 iso_version="$(date --date="@${SOURCE_DATE_EPOCH:-$(date +%s)}" +%Y.%m.%d)"
 install_dir="arch"
 bootmodes=('bios.syslinux'
@@ -23,4 +23,7 @@ file_permissions=(
   ["/usr/local/bin/Installation_guide"]="0:0:755"
   ["/usr/local/bin/livecd-sound"]="0:0:755"
   ["/usr/local/bin/sinergia-post-install.sh"]="0:0:0755"
+  ["/usr/local/bin/sinergia-installer"]="0:0:0755"
+  ["/home/live/Desktop"]="1000:1000:0755"
+  ["/home/live/Desktop/sinergia-installer.desktop"]="1000:1000:0755"
 )
