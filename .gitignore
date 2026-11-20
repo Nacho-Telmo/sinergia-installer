@@ -1,0 +1,31 @@
+# Python bytecode y cachés
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+
+# Respaldos locales y temporales de edición
+*.bak
+*.bak_*
+*~
+*.swp
+*.swo
+.DS_Store
+
+# Archivos sensibles y credenciales
+iso-profile-snapshot/etc-live/shadow
+iso-profile-snapshot/etc-live/gshadow
+*.key
+*.pem
+*.gpg
+!iso-profile-snapshot/sinergia-repo.asc
+
+# Artefactos pesados de ISO (por si se generan dentro del repo)
+*.iso
+work/
+out/
