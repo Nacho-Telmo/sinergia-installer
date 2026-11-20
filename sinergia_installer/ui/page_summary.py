@@ -36,18 +36,10 @@ class SummaryPage(QWidget):
         plan_layout.addWidget(self.txt_plan)
         layout.addWidget(grp_plan)
 
-        self.chk_dry_run = QCheckBox("Modo simulación (dry-run): mostrar pasos sin tocar los discos")
-        self.chk_dry_run.setChecked(self.config.dry_run)
-        self.chk_dry_run.toggled.connect(self._on_dry_run_toggled)
-        layout.addWidget(self.chk_dry_run)
-
-    def _on_dry_run_toggled(self, checked: bool) -> None:
-        self.config.dry_run = checked
 
     def refresh_summary(self) -> None:
         c = self.config
         p = c.partitions
-        self.chk_dry_run.setChecked(c.dry_run)
 
         efi_line = (
             f"{p.efi_device} (formatear: {'Sí' if p.format_efi else 'No'})"

@@ -105,8 +105,8 @@ rsync -a --chown=root:root \
 
 log "Creando ejecutable y lanzadores .desktop de sinergia-installer..."
 install -d -m 0755 "${AIROOTFS_DIR}/usr/local/bin" "${AIROOTFS_DIR}/usr/share/pixmaps"
-if [[ -f "${AIROOTFS_DIR}/opt/sinergia-installer/sinergia_installer/assets/slides/05_emblema.png" ]]; then
-    install -m 0644         "${AIROOTFS_DIR}/opt/sinergia-installer/sinergia_installer/assets/slides/05_emblema.png"         "${AIROOTFS_DIR}/usr/share/pixmaps/sinergia-installer.png"
+if [[ -f "${AIROOTFS_DIR}/opt/sinergia-installer/sinergia_installer/assets/emblema_sinergia.png" ]]; then
+    install -m 0644         "${AIROOTFS_DIR}/opt/sinergia-installer/sinergia_installer/assets/emblema_sinergia.png"         "${AIROOTFS_DIR}/usr/share/pixmaps/sinergia-installer.png"
 fi
 printf '%s\n' \
     '#!/usr/bin/env bash' \

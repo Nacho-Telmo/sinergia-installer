@@ -17,7 +17,7 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.setWindowTitle("Sinergia Installer — Sinergia Linux")
         self.resize(840, 650)
-        self.config = InstallConfig(dry_run=True)
+        self.config = InstallConfig(dry_run=False)
         self.engine = InstallerEngine(self)
         self._in_progress = False
 

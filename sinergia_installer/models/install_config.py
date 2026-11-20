@@ -26,4 +26,4 @@ class InstallConfig:
     root_password: str = ""
     sudo_nopasswd: bool = False
     partitions: PartitionAssignment = field(default_factory=PartitionAssignment)
-    dry_run: bool = True
+    dry_run: bool = False

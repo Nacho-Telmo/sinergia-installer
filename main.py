@@ -10,9 +10,13 @@ from PyQt6.QtGui import QColor, QGuiApplication, QIcon, QPalette, QPixmap
 
 
 def _load_app_icon() -> QIcon:
-    base = Path(__file__).resolve().parent / "sinergia_installer" / "assets" / "slides"
-    for name in ("05_emblema.png", "01_sinergia_linux.png"):
-        img = base / name
+    assets_dir = Path(__file__).resolve().parent / "sinergia_installer" / "assets"
+    candidates = (
+        assets_dir / "emblema_sinergia.png",
+        assets_dir / "slides" / "05_emblema.png",
+        assets_dir / "slides" / "01_sinergia_linux.png",
+    )
+    for img in candidates:
         if img.is_file():
             pm = QPixmap(str(img))
             if not pm.isNull():
