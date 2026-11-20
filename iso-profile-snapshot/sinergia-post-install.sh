@@ -231,5 +231,70 @@ for line in lines:
 cfg_path.write_text("".join(updated), encoding="utf-8")
 FIX_GRUB
 fi
+# Identidad de Sinergia Linux en /etc/os-release y logo global de fastfetch
+echo "==> Configurando identidad de Sinergia Linux y logo de fastfetch..."
+install -d -m 0755 /usr/local/share/sinergia /usr/share/sinergia /etc/pacman.d/hooks /etc/xdg/fastfetch
+
+rm -f /etc/os-release
+cat <<'EOS' > /usr/local/share/sinergia/os-release
+NAME="Sinergia Linux"
+PRETTY_NAME="Sinergia Linux"
+ID=sinergia
+ID_LIKE=arch
+BUILD_ID=rolling
+ANSI_COLOR="38;2;0;229;255"
+HOME_URL="https://github.com/Nacho-Telmo"
+DOCUMENTATION_URL="https://github.com/Nacho-Telmo"
+SUPPORT_URL="https://github.com/Nacho-Telmo"
+BUG_REPORT_URL="https://github.com/Nacho-Telmo"
+LOGO=sinergia-installer
+EOS
+install -m 0644 /usr/local/share/sinergia/os-release /etc/os-release
+
+cat <<'EOS' > /etc/pacman.d/hooks/99-sinergia-os-release.hook
+[Trigger]
+Operation = Install
+Operation = Upgrade
+Type = Package
+Target = filesystem
+
+[Action]
+Description = Restaurando identidad de Sinergia Linux en /etc/os-release...
+When = PostTransaction
+Exec = /usr/bin/install -m 0644 /usr/local/share/sinergia/os-release /etc/os-release
+EOS
+
+cat <<'EOS' > /usr/share/sinergia/fastfetch-logo.txt
+$1       .dSSSSSSSSSSSSb.
+$1     .dSSSSSSSSSSSSSSSSb.
+$1    dSSSSP'`      `'YSSSSb
+$1   dSSSS'            `YSSSP
+$1   YSSSSb.
+$1    `YSSSSSSb.
+$2      `YSSSSSSSSb.
+$2         `YSSSSSSSSb.
+$2            `YSSSSSSSSb.
+$2               `YSSSSSSSSb
+$2   dSSSSb.         `YSSSSP
+$2   YSSSSb.         .dSSSS'
+$1    `YSSSSb.     .dSSSSP'
+$1      `YSSSSSSSSSSSSSP'
+$1        `YSSSSSSSSSP'
+EOS
+
+cat <<'EOS' > /etc/xdg/fastfetch/config.jsonc
+{
+  "$schema": "https://github.com/fastfetch-cli/fastfetch/raw/dev/doc/json_schema.json",
+  "logo": {
+    "type": "file",
+    "source": "/usr/share/sinergia/fastfetch-logo.txt",
+    "color": {
+      "1": "cyan",
+      "2": "blue"
+    }
+  }
+}
+EOS
+
 rm -f /usr/local/bin/sinergia-post-install.sh
 echo "==> Post-instalación de SinergiaLinux completada correctamente."
