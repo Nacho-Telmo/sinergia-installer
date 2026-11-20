@@ -1,9 +1,33 @@
 import os
 import sys
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QColor, QPalette
 from PyQt6.QtWidgets import QApplication
 from sinergia_installer.ui.main_window import MainWindow
+
+
+from pathlib import Path
+from PyQt6.QtGui import QColor, QGuiApplication, QIcon, QPalette, QPixmap
+
+
+def _load_app_icon() -> QIcon:
+    base = Path(__file__).resolve().parent / "sinergia_installer" / "assets" / "slides"
+    for name in ("05_emblema.png", "01_sinergia_linux.png"):
+        img = base / name
+        if img.is_file():
+            pm = QPixmap(str(img))
+            if not pm.isNull():
+                icon = QIcon()
+                for sz in (16, 24, 32, 48, 64, 128, 256):
+                    icon.addPixmap(
+                        pm.scaled(
+                            sz,
+                            sz,
+                            Qt.AspectRatioMode.KeepAspectRatio,
+                            Qt.TransformationMode.SmoothTransformation,
+                        )
+                    )
+                return icon
+    return QIcon.fromTheme("sinergia-installer")
 
 
 def _apply_dark_theme(app: QApplication) -> None:
@@ -106,6 +130,52 @@ def _apply_dark_theme(app: QApplication) -> None:
             selection-background-color: #0284c7;
             selection-color: #ffffff;
         }}
+        QCheckBox, QRadioButton {{
+            spacing: 8px;
+            color: #f1f5f9;
+            font-size: 10pt;
+            padding: 3px 0;
+        }}
+        QCheckBox:disabled, QRadioButton:disabled {{
+            color: #64748b;
+        }}
+        QCheckBox::indicator {{
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+            border: 2px solid #64748b;
+            background-color: #182030;
+        }}
+        QCheckBox::indicator:hover {{
+            border-color: #38bdf8;
+            background-color: #1f2a3f;
+        }}
+        QCheckBox::indicator:checked {{
+            border: 2px solid #bae6fd;
+            background-color: #0ea5e9;
+        }}
+        QCheckBox::indicator:checked:hover {{
+            border: 2px solid #e0f2fe;
+            background-color: #38bdf8;
+        }}
+        QCheckBox::indicator:unchecked:disabled, QCheckBox::indicator:checked:disabled {{
+            border-color: #334155;
+            background-color: #121722;
+        }}
+        QRadioButton::indicator {{
+            width: 20px;
+            height: 20px;
+            border-radius: 10px;
+            border: 2px solid #64748b;
+            background-color: #182030;
+        }}
+        QRadioButton::indicator:hover {{
+            border-color: #38bdf8;
+        }}
+        QRadioButton::indicator:checked {{
+            border: 5px solid #0ea5e9;
+            background-color: #f8fafc;
+        }}
         QMessageBox {{
             background-color: #161b26;
             color: #e6edf3;
@@ -119,9 +189,15 @@ def main() -> int:
     QApplication.setHighDpiScaleFactorRoundingPolicy(
         Qt.HighDpiScaleFactorRoundingPolicy.PassThrough
     )
+    QGuiApplication.setDesktopFileName("sinergia-installer")
     app = QApplication(sys.argv)
+    app_icon = _load_app_icon()
+    if not app_icon.isNull():
+        app.setWindowIcon(app_icon)
     _apply_dark_theme(app)
     window = MainWindow()
+    if not app_icon.isNull():
+        window.setWindowIcon(app_icon)
     window.show()
     return app.exec()
 

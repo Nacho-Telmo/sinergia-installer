@@ -1,3 +1,5 @@
+import subprocess
+import shutil
 # sinergia_installer/ui/page_partitions.py
 import os
 from PyQt6.QtCore import QProcess
@@ -77,34 +79,95 @@ class PartitionsPage(QWidget):
         self.lbl_error.setText("")
         self.btn_open_pm.setEnabled(False)
 
-        runtime_dir = os.environ.get("XDG_RUNTIME_DIR") or (
-            "/run/user/1000" if os.path.isdir("/run/user/1000") else "/run/user/0"
-        )
+        self._pm_fallback_tried = False
+        self._launch_partition_manager(use_dbus_session=False)
+
+    def _allow_root_xwayland(self, display: str) -> None:
+        if not display or not shutil.which("xhost"):
+            return
+        try:
+            st = os.stat("/run/user/1000") if os.path.isdir("/run/user/1000") else None
+            if st and shutil.which("runuser"):
+                subprocess.run(
+                    ["runuser", "-u", f"#{st.st_uid}", "--", "env", f"DISPLAY={display}", "xhost", "+SI:localuser:root"],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                    timeout=3,
+                    check=False,
+                )
+            else:
+                subprocess.run(
+                    ["env", f"DISPLAY={display}", "xhost", "+SI:localuser:root"],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                    timeout=3,
+                    check=False,
+                )
+        except Exception:
+            pass
+
+    def _build_pm_env(self, use_xcb: bool) -> dict[str, str]:
+        is_root = os.geteuid() == 0
+        if not is_root:
+            return dict(os.environ)
+
+        display = os.environ.get("DISPLAY") or (":0" if os.path.exists("/tmp/.X11-unix/X0") else "")
+        if display:
+            self._allow_root_xwayland(display)
+
+        runtime_dir = "/run/user/0" if os.path.isdir("/run/user/0") else "/tmp"
         env_vars = {
             "PATH": os.environ.get("PATH", "/usr/local/sbin:/usr/local/bin:/usr/bin"),
+            "HOME": "/root",
             "XDG_RUNTIME_DIR": runtime_dir,
-            "XDG_SESSION_TYPE": os.environ.get("XDG_SESSION_TYPE", "wayland"),
         }
-        if "DISPLAY" in os.environ:
-            env_vars["DISPLAY"] = os.environ["DISPLAY"]
-        if "WAYLAND_DISPLAY" in os.environ:
-            env_vars["WAYLAND_DISPLAY"] = os.environ["WAYLAND_DISPLAY"]
+        if display:
+            env_vars["DISPLAY"] = display
+            env_vars["QT_QPA_PLATFORM"] = "xcb"
+            env_vars["XDG_SESSION_TYPE"] = "x11"
+        return env_vars
 
+    def _launch_partition_manager(self, use_dbus_session: bool) -> None:
+        is_root = os.geteuid() == 0
+        env_vars = self._build_pm_env(use_xcb=True)
         env_args = [f"{k}={v}" for k, v in env_vars.items()]
-        program = "env" if os.geteuid() == 0 else "pkexec"
-        args = [*env_args, "partitionmanager"] if os.geteuid() == 0 else ["env", *env_args, "partitionmanager"]
 
+        if is_root:
+            cmd_tail = ["dbus-run-session", "--", "partitionmanager"] if use_dbus_session else ["partitionmanager"]
+            program = "env"
+            args = [*env_args, *cmd_tail]
+        else:
+            program = "partitionmanager"
+            args = []
+
+        self.lbl_error.clear()
         self._pm_process = QProcess(self)
         self._pm_process.errorOccurred.connect(self._on_pm_error)
-        self._pm_process.finished.connect(self._on_pm_closed)
+        self._pm_process.finished.connect(self._on_pm_exit)
         self._pm_process.start(program, args)
 
-    def _on_pm_error(self, _error: QProcess.ProcessError) -> None:
+    def _on_pm_error(self, error: QProcess.ProcessError) -> None:
+        if os.geteuid() == 0 and not self._pm_fallback_tried:
+            self._pm_fallback_tried = True
+            self._launch_partition_manager(use_dbus_session=True)
+            return
         self.btn_open_pm.setEnabled(has_partition_manager())
-        self.lbl_error.setText("No se pudo iniciar KDE Partition Manager desde el instalador.")
+        self.lbl_error.setText(f"Error al lanzar KDE Partition Manager ({error.name}).")
 
-    def _on_pm_closed(self) -> None:
+    def _on_pm_exit(self, exit_code: int, _exit_status: QProcess.ExitStatus) -> None:
+        err_out = ""
+        if self._pm_process is not None:
+            err_out = bytes(self._pm_process.readAllStandardError()).decode("utf-8", errors="ignore").strip()
+
+        if os.geteuid() == 0 and exit_code != 0 and not self._pm_fallback_tried:
+            self._pm_fallback_tried = True
+            self._launch_partition_manager(use_dbus_session=True)
+            return
+
         self.btn_open_pm.setEnabled(has_partition_manager())
+        if exit_code != 0:
+            detalle = f": {err_out.splitlines()[-1]}" if err_out else ""
+            self.lbl_error.setText(f"KDE Partition Manager cerró con código {exit_code}{detalle}")
         self.refresh_partitions()
 
     def refresh_partitions(self) -> None:

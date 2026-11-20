@@ -102,6 +102,48 @@ class InstallerEngine(QObject):
                 "genfstab -U /mnt > /mnt/etc/fstab && test -s /mnt/etc/fstab",
             ],
         ))
+        multilib_cmd = """
+python3 - <<'PY'
+from pathlib import Path
+
+conf_path = Path("/mnt/etc/pacman.conf")
+lines = conf_path.read_text(encoding="utf-8").splitlines()
+out = []
+has_active = any(line.strip() == "[multilib]" for line in lines)
+uncommented = False
+i = 0
+
+while i < len(lines):
+    s = lines[i].strip()
+    if not has_active and s.startswith("#") and s.lstrip("#").strip() == "[multilib]":
+        out.append("[multilib]")
+        if i + 1 < len(lines):
+            nxt = lines[i + 1].strip()
+            if nxt.startswith("#") and "Include" in nxt and "/etc/pacman.d/mirrorlist" in nxt:
+                out.append("Include = /etc/pacman.d/mirrorlist")
+                i += 2
+                uncommented = True
+                continue
+        out.append("Include = /etc/pacman.d/mirrorlist")
+        uncommented = True
+    else:
+        out.append(lines[i])
+    i += 1
+
+if not has_active and not uncommented:
+    if out and out[-1] != "":
+        out.append("")
+    out.extend(["[multilib]", "Include = /etc/pacman.d/mirrorlist"])
+
+conf_path.write_text(chr(10).join(out) + chr(10), encoding="utf-8")
+PY
+arch-chroot /mnt pacman -Sy --noconfirm
+"""
+
+        plan.append((
+            "Habilitar repositorio [multilib] en /mnt/etc/pacman.conf",
+            ["bash", "-c", multilib_cmd],
+        ))
         plan.append((
             "Asignar permisos de ejecución al script de post-instalación",
             ["chmod", "0755", "/mnt/usr/local/bin/sinergia-post-install.sh"],

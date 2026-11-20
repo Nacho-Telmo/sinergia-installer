@@ -104,12 +104,15 @@ rsync -a --chown=root:root \
 
 
 log "Creando ejecutable y lanzadores .desktop de sinergia-installer..."
-install -d -m 0755 "${AIROOTFS_DIR}/usr/local/bin"
+install -d -m 0755 "${AIROOTFS_DIR}/usr/local/bin" "${AIROOTFS_DIR}/usr/share/pixmaps"
+if [[ -f "${AIROOTFS_DIR}/opt/sinergia-installer/sinergia_installer/assets/slides/05_emblema.png" ]]; then
+    install -m 0644         "${AIROOTFS_DIR}/opt/sinergia-installer/sinergia_installer/assets/slides/05_emblema.png"         "${AIROOTFS_DIR}/usr/share/pixmaps/sinergia-installer.png"
+fi
 printf '%s\n' \
     '#!/usr/bin/env bash' \
     'set -euo pipefail' \
     'if [[ "${EUID}" -eq 0 ]]; then exec python3 /opt/sinergia-installer/main.py "$@"; fi' \
-    'exec pkexec env DISPLAY="${DISPLAY:-}" WAYLAND_DISPLAY="${WAYLAND_DISPLAY:-}" XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-}" XAUTHORITY="${XAUTHORITY:-}" QT_QPA_PLATFORM="${QT_QPA_PLATFORM:-}" python3 /opt/sinergia-installer/main.py "$@"' \
+    'exec pkexec env DISPLAY="${DISPLAY:-}" WAYLAND_DISPLAY="${WAYLAND_DISPLAY:-}" XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-}" DBUS_SESSION_BUS_ADDRESS="${DBUS_SESSION_BUS_ADDRESS:-}" XAUTHORITY="${XAUTHORITY:-}" QT_QPA_PLATFORM="${QT_QPA_PLATFORM:-}" QT_QPA_PLATFORMTHEME="${QT_QPA_PLATFORMTHEME:-}" python3 /opt/sinergia-installer/main.py "$@"' \
     >| "${AIROOTFS_DIR}/usr/local/bin/sinergia-installer"
 chmod 0755 "${AIROOTFS_DIR}/usr/local/bin/sinergia-installer"
 
@@ -122,7 +125,8 @@ printf '%s\n' \
     'GenericName=Instalador del Sistema' \
     'Comment=Asistente de instalación de Sinergia Linux' \
     'Exec=/usr/local/bin/sinergia-installer' \
-    'Icon=system-software-install' \
+    'Icon=/usr/share/pixmaps/sinergia-installer.png' \
+    'StartupWMClass=sinergia-installer' \
     'Terminal=false' \
     'Categories=System;Settings;' \
     'StartupNotify=true' \
