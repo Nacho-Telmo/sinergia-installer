@@ -61,18 +61,29 @@ if [[ -d "${SNAPSHOT_DIR}/etc-live" ]]; then
     for cfg in passwd group hostname motd; do
         [[ -f "${SNAPSHOT_DIR}/etc-live/${cfg}" ]] && install -m 0644 "${SNAPSHOT_DIR}/etc-live/${cfg}" "${AIROOTFS_DIR}/etc/${cfg}"
     done
+    if [[ -f "${SNAPSHOT_DIR}/etc-live/shadow" ]]; then
+        install -m 0400 "${SNAPSHOT_DIR}/etc-live/shadow" "${AIROOTFS_DIR}/etc/shadow"
+    fi
     if [[ -f "${SNAPSHOT_DIR}/etc-live/live-nopasswd" ]]; then
         install -d -m 0750 "${AIROOTFS_DIR}/etc/sudoers.d"
         install -m 0440 "${SNAPSHOT_DIR}/etc-live/live-nopasswd" "${AIROOTFS_DIR}/etc/sudoers.d/live-nopasswd"
     fi
 fi
 
+install -d -m 0700 -o 1000 -g 1000 "${AIROOTFS_DIR}/home/live"
+
 [[ -f "${SNAPSHOT_DIR}/locale.conf" ]] && install -m 0644 "${SNAPSHOT_DIR}/locale.conf" "${AIROOTFS_DIR}/etc/locale.conf"
 
 if [[ -f "${SNAPSHOT_DIR}/autologin.conf" ]]; then
-    install -d -m 0755 "${AIROOTFS_DIR}/etc/systemd/system/getty@tty1.service.d"
-    install -m 0644 "${SNAPSHOT_DIR}/autologin.conf" "${AIROOTFS_DIR}/etc/systemd/system/getty@tty1.service.d/autologin.conf"
+    install -d -m 0755 "${AIROOTFS_DIR}/etc/sddm.conf.d"
+    install -m 0644 "${SNAPSHOT_DIR}/autologin.conf" "${AIROOTFS_DIR}/etc/sddm.conf.d/autologin.conf"
+    rm -rf "${AIROOTFS_DIR}/etc/systemd/system/getty@tty1.service.d"
 fi
+
+log "Habilitando servicios gráficos y de red en airootfs..."
+install -d -m 0755 "${AIROOTFS_DIR}/etc/systemd/system/multi-user.target.wants"
+ln -sf /usr/lib/systemd/system/sddm.service "${AIROOTFS_DIR}/etc/systemd/system/display-manager.service"
+ln -sf /usr/lib/systemd/system/NetworkManager.service "${AIROOTFS_DIR}/etc/systemd/system/multi-user.target.wants/NetworkManager.service"
 
 log "Copiando sinergia-installer a ${AIROOTFS_DIR}/opt/sinergia-installer..."
 INSTALLER_DEST="${AIROOTFS_DIR}/opt/sinergia-installer"
