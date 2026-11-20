@@ -127,6 +127,24 @@ pacman-key --lsign-key 3056513887B78AEB || true
 pacman -Sy --noconfirm || true
 pacman -U --noconfirm https://cdn-mirror.chaotic.cx/chaotic-aur/chaotic-keyring.pkg.tar.zst https://cdn-mirror.chaotic.cx/chaotic-aur/chaotic-mirrorlist.pkg.tar.zst || true
 pacman-key --populate chaotic || true
+# Asegurar repositorios [chaotic-aur] y [sinergia-repo] en /etc/pacman.conf
+if ! grep -q '^\[chaotic-aur\]' /etc/pacman.conf; then
+    cat >> /etc/pacman.conf <<'EOF_CHAOTIC_CONF'
+
+[chaotic-aur]
+Include = /etc/pacman.d/chaotic-mirrorlist
+EOF_CHAOTIC_CONF
+fi
+
+if ! grep -q '^\[sinergia-repo\]' /etc/pacman.conf; then
+    cat >> /etc/pacman.conf <<'EOF_SINERGIA_CONF'
+
+[sinergia-repo]
+SigLevel = Required DatabaseOptional
+Server = https://nacho-telmo.github.io/sinergia-repo/$arch
+EOF_SINERGIA_CONF
+fi
+
 pacman -Sy --noconfirm sinergia-keyring || true
 
 # Configurar mapa de teclado en español para consola, X11 y Wayland/KDE
