@@ -89,7 +89,7 @@ log "Copiando sinergia-installer a ${AIROOTFS_DIR}/opt/sinergia-installer..."
 INSTALLER_DEST="${AIROOTFS_DIR}/opt/sinergia-installer"
 rm -rf "${INSTALLER_DEST}"
 mkdir -p "${INSTALLER_DEST}"
-rsync -a \
+rsync -a --chown=root:root \
     --exclude='.git/' \
     --exclude='__pycache__/' \
     --exclude='*.pyc' \
@@ -101,5 +101,37 @@ rsync -a \
     "${REPO_DIR}/LICENSE" \
     "${REPO_DIR}/sinergia_installer" \
     "${INSTALLER_DEST}/"
+
+
+log "Creando ejecutable y lanzadores .desktop de sinergia-installer..."
+install -d -m 0755 "${AIROOTFS_DIR}/usr/local/bin"
+printf '%s\n' \
+    '#!/usr/bin/env bash' \
+    'set -euo pipefail' \
+    'if [[ "${EUID}" -eq 0 ]]; then exec python3 /opt/sinergia-installer/main.py "$@"; fi' \
+    'exec pkexec env DISPLAY="${DISPLAY:-}" WAYLAND_DISPLAY="${WAYLAND_DISPLAY:-}" XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-}" XAUTHORITY="${XAUTHORITY:-}" QT_QPA_PLATFORM="${QT_QPA_PLATFORM:-}" python3 /opt/sinergia-installer/main.py "$@"' \
+    >| "${AIROOTFS_DIR}/usr/local/bin/sinergia-installer"
+chmod 0755 "${AIROOTFS_DIR}/usr/local/bin/sinergia-installer"
+
+install -d -m 0755 "${AIROOTFS_DIR}/usr/share/applications"
+printf '%s\n' \
+    '[Desktop Entry]' \
+    'Type=Application' \
+    'Version=1.0' \
+    'Name=Instalar Sinergia Linux' \
+    'GenericName=Instalador del Sistema' \
+    'Comment=Asistente de instalación de Sinergia Linux' \
+    'Exec=/usr/local/bin/sinergia-installer' \
+    'Icon=system-software-install' \
+    'Terminal=false' \
+    'Categories=System;Settings;' \
+    'StartupNotify=true' \
+    >| "${AIROOTFS_DIR}/usr/share/applications/sinergia-installer.desktop"
+chmod 0644 "${AIROOTFS_DIR}/usr/share/applications/sinergia-installer.desktop"
+
+install -d -m 0755 -o 1000 -g 1000 "${AIROOTFS_DIR}/home/live/Desktop"
+install -m 0755 -o 1000 -g 1000 \
+    "${AIROOTFS_DIR}/usr/share/applications/sinergia-installer.desktop" \
+    "${AIROOTFS_DIR}/home/live/Desktop/sinergia-installer.desktop"
 
 log "Listo. Perfil restaurado en ${TARGET_DIR}."

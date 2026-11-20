@@ -31,6 +31,7 @@ rm -f /root/.automated_script.sh /root/.zlogin
 
 rm -rf /opt/sinergia-installer
 rm -f /usr/share/applications/sinergia-installer.desktop
+rm -f /usr/local/bin/sinergia-installer
 
 echo "==> [2/7] Configurando zona horaria (${TIMEZONE}) y reloj..."
 ln -sf "/usr/share/zoneinfo/${TIMEZONE}" /etc/localtime
