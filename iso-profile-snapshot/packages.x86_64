@@ -47,7 +47,6 @@ kitty-terminfo
 kmscon-terminfo
 ldns
 less
-lftp
 libfido2
 libusb-compat
 linux
@@ -115,7 +114,6 @@ udftools
 usb_modeswitch
 usbmuxd
 usbutils
-vim
 virtualbox-guest-utils-nox
 vpnc
 wireless-regdb
@@ -162,6 +160,10 @@ sinergia-welcome
 stacer-bin
 telegram-desktop
 ventoy-bin
+kde-gtk-config
+breeze-gtk
+kdeplasma-addons
+
 
 # Red y audio
 networkmanager
