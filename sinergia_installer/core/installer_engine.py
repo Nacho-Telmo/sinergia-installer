@@ -64,6 +64,13 @@ class InstallerEngine(QObject):
                 plan.append((f"Formatear /home ({p.home_device})", ["mkfs.ext4", "-F", p.home_device]))
             plan.append((f"Montar /home {p.home_device} en /mnt/home", ["mount", p.home_device, "/mnt/home"]))
 
+        swap_dev = (getattr(p, "swap_device", "") or "").strip()
+        format_swap = bool(getattr(p, "format_swap", True))
+        if swap_dev:
+            if format_swap:
+                plan.append((f"Formatear swap ({swap_dev})", ["mkswap", "-f", swap_dev]))
+            plan.append((f"Activar swap ({swap_dev})", ["swapon", swap_dev]))
+
         plan.append((
             "Desplegar sistema base en /mnt",
             [
@@ -99,7 +106,14 @@ class InstallerEngine(QObject):
             [
                 "bash",
                 "-c",
-                "genfstab -U /mnt > /mnt/etc/fstab && test -s /mnt/etc/fstab",
+                "set -e; "
+                "genfstab -U /mnt > /mnt/etc/fstab && test -s /mnt/etc/fstab; "
+                "for dev in $(blkid -t TYPE=swap -o device 2>/dev/null || true); do "
+                "  UUID=$(blkid -s UUID -o value \"$dev\" 2>/dev/null || true); "
+                "  if [ -n \"$UUID\" ] && ! grep -q \"UUID=$UUID\" /mnt/etc/fstab; then "
+                "    printf 'UUID=%s none swap defaults 0 0\\n' \"$UUID\" >> /mnt/etc/fstab; "
+                "  fi; "
+                "done",
             ],
         ))
         multilib_cmd = """

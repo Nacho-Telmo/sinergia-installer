@@ -53,6 +53,7 @@ def validate_assignments(
     efi_dev: str,
     home_dev: str,
     uefi: bool,
+    swap_dev: str = "",
 ) -> list[str]:
     errors: list[str] = []
 
@@ -62,7 +63,7 @@ def validate_assignments(
     if uefi and not efi_dev:
         errors.append("El sistema arrancó en modo UEFI: seleccioná una partición EFI para /boot/efi.")
 
-    chosen = [d for d in (root_dev, efi_dev, home_dev) if d]
+    chosen = [d for d in (root_dev, efi_dev, home_dev, swap_dev) if d]
     if len(chosen) != len(set(chosen)):
         errors.append("No podés asignar la misma partición a más de un punto de montaje.")
 

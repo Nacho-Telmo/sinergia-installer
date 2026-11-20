@@ -62,12 +62,18 @@ class PartitionsPage(QWidget):
         self.combo_home = QComboBox()
         self.chk_format_home = QCheckBox("Formatear /home")
 
+        self.combo_swap = QComboBox()
+        self.chk_format_swap = QCheckBox("Formatear swap (mkswap)")
+        self.chk_format_swap.setChecked(True)
+
         form.addRow("Partición raíz (/):", self.combo_root)
         form.addRow("", self.chk_format_root)
         form.addRow("Partición EFI (/boot/efi):", self.combo_efi)
         form.addRow("", self.chk_format_efi)
         form.addRow("Partición /home (opcional):", self.combo_home)
         form.addRow("", self.chk_format_home)
+        form.addRow("Partición swap (opcional):", self.combo_swap)
+        form.addRow("", self.chk_format_swap)
         layout.addLayout(form)
 
         self.lbl_error = QLabel("")
@@ -175,23 +181,32 @@ class PartitionsPage(QWidget):
         self.combo_root.clear()
         self.combo_efi.clear()
         self.combo_home.clear()
+        self.combo_swap.clear()
 
         self.combo_efi.addItem("— Ninguna —", "")
         self.combo_home.addItem("— Usar dentro de / —", "")
+        self.combo_swap.addItem("— Ninguna —", "")
 
+        swap_idx = 0
         for part in partitions:
             label = f"{part.path}  ({part.size} · {part.fstype})"
             self.combo_root.addItem(label, part.path)
             self.combo_efi.addItem(label, part.path)
             self.combo_home.addItem(label, part.path)
+            self.combo_swap.addItem(label, part.path)
+            if (part.fstype or "").lower() in ("swap", "linux-swap"):
+                swap_idx = self.combo_swap.count() - 1
+        if swap_idx > 0:
+            self.combo_swap.setCurrentIndex(swap_idx)
 
     def save_and_validate(self) -> bool:
         root_dev = self.combo_root.currentData() or ""
         efi_dev = self.combo_efi.currentData() or ""
         home_dev = self.combo_home.currentData() or ""
+        swap_dev = self.combo_swap.currentData() or ""
         uefi = is_uefi_boot()
 
-        errors = validate_assignments(root_dev, efi_dev, home_dev, uefi)
+        errors = validate_assignments(root_dev, efi_dev, home_dev, uefi, swap_dev)
         if errors:
             self.lbl_error.setText("\n".join(errors))
             QMessageBox.warning(self, "Revisión de particiones", "\n".join(errors))
@@ -204,5 +219,7 @@ class PartitionsPage(QWidget):
         self.config.partitions.format_efi = self.chk_format_efi.isChecked()
         self.config.partitions.home_device = home_dev
         self.config.partitions.format_home = self.chk_format_home.isChecked()
+        self.config.partitions.swap_device = swap_dev
+        self.config.partitions.format_swap = self.chk_format_swap.isChecked()
         self.config.partitions.is_uefi = uefi
         return True

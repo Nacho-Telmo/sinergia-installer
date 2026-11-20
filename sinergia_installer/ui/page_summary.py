@@ -51,12 +51,20 @@ class SummaryPage(QWidget):
             if p.home_device
             else "Dentro de la partición raíz (/)"
         )
+        swap_dev = (getattr(p, "swap_device", "") or "").strip()
+        format_swap = bool(getattr(p, "format_swap", True))
+        swap_line = (
+            f"{swap_dev} (formatear: {'Sí' if format_swap else 'No'})"
+            if swap_dev
+            else "Ninguna"
+        )
 
         self.lbl_summary.setText(
             f"<b>Modo arranque:</b> {'UEFI' if p.is_uefi else 'BIOS / Legacy'}<br>"
             f"<b>Raíz (/):</b> {p.root_device} ({p.root_fs}, formatear: {'Sí' if p.format_root else 'No'})<br>"
             f"<b>EFI (/boot/efi):</b> {efi_line}<br>"
             f"<b>/home:</b> {home_line}<br>"
+            f"<b>Swap:</b> {swap_line}<br>"
             f"<b>Idioma / Teclado / Zona:</b> {c.locale} · {c.keymap} · {c.timezone}<br>"
             f"<b>Usuario / Hostname:</b> {c.username} ({c.full_name}) en <code>{c.hostname}</code>"
             f"{' · <i>sudo sin contraseña</i>' if c.sudo_nopasswd else ''}"

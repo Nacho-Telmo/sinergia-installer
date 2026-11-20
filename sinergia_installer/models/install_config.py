@@ -10,6 +10,8 @@ class PartitionAssignment:
     format_efi: bool = False
     home_device: str = ""
     format_home: bool = False
+    swap_device: str = ""
+    format_swap: bool = True
     is_uefi: bool = True
 
 
