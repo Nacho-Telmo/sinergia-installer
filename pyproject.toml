@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sinergia-installer"
+version = "0.1.0"
+description = "Instalador gráfico en Python y PyQt6 para Sinergia Linux"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "GPL-3.0-or-later" }
+authors = [
+    { name = "Nacho Telmo - Sinergia Comunidad Linuxera" }
+]
+dependencies = [
+    "PyQt6"
+]
+
+[project.gui-scripts]
+sinergia-installer = "main:main"
+
+[tool.setuptools.packages.find]
+include = ["sinergia_installer*"]
