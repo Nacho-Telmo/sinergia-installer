@@ -72,9 +72,20 @@ class ProgressPage(QWidget):
     def _build_ui(self) -> None:
         layout = QVBoxLayout(self)
         layout.setSpacing(10)
+        progress_header = QHBoxLayout()
+        progress_header.setSpacing(10)
+        self.lbl_progress_logo = QLabel()
+        logo_file = Path(__file__).resolve().parent.parent / "assets" / "logo_puntillismo.png"
+        if logo_file.is_file():
+            logo_pm = QPixmap(str(logo_file))
+            if not logo_pm.isNull():
+                self.lbl_progress_logo.setPixmap(logo_pm.scaled(48, 48, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation))
+        progress_header.addWidget(self.lbl_progress_logo)
+
         self.lbl_status = QLabel("Preparando instalación...")
         self.lbl_status.setStyleSheet("font-weight: bold; font-size: 11pt;")
-        layout.addWidget(self.lbl_status)
+        progress_header.addWidget(self.lbl_status, stretch=1)
+        layout.addLayout(progress_header)
 
         self.progress_bar = QProgressBar()
         self.progress_bar.setRange(0, 100)

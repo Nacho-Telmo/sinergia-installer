@@ -1,4 +1,7 @@
+from pathlib import Path
+from PyQt6.QtCore import Qt
 import subprocess
+from PyQt6.QtGui import QIcon, QPixmap
 from PyQt6.QtWidgets import (
     QHBoxLayout, QLabel, QMainWindow, QMessageBox,
     QPushButton, QStackedWidget, QVBoxLayout, QWidget,
@@ -21,11 +24,26 @@ class MainWindow(QMainWindow):
         self.engine = InstallerEngine(self)
         self._in_progress = False
 
+        logo_path = Path(__file__).resolve().parent.parent / "assets" / "logo_puntillismo.png"
+        if logo_path.is_file():
+            self.setWindowIcon(QIcon(str(logo_path)))
+
         central = QWidget()
         self.setCentralWidget(central)
         root_layout = QVBoxLayout(central)
+
+        header_bar = QHBoxLayout()
+        header_bar.setSpacing(10)
+        self.lbl_app_logo = QLabel()
+        if logo_path.is_file():
+            pm = QPixmap(str(logo_path))
+            if not pm.isNull():
+                self.lbl_app_logo.setPixmap(pm.scaled(36, 36, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation))
+        header_bar.addWidget(self.lbl_app_logo)
+
         self.lbl_step = QLabel()
-        root_layout.addWidget(self.lbl_step)
+        header_bar.addWidget(self.lbl_step, stretch=1)
+        root_layout.addLayout(header_bar)
 
         self.stack = QStackedWidget()
         self.page_partitions = PartitionsPage(self.config)
