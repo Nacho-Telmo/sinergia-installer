@@ -3,9 +3,15 @@ from dataclasses import dataclass, field
 
 @dataclass
 class PartitionAssignment:
+    mode: str = "manual"  # "manual" | "auto"
+    target_disk: str = ""
+    auto_swap: bool = True
+    auto_swap_gib: int = 4
+    auto_separate_home: bool = False
+
     root_device: str = ""
     format_root: bool = True
-    root_fs: str = "ext4"
+    root_fs: str = "ext4"  # "ext4" | "btrfs"
     efi_device: str = ""
     format_efi: bool = False
     home_device: str = ""

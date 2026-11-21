@@ -90,6 +90,20 @@ class MainWindow(QMainWindow):
             if next_widget is self.page_summary:
                 self.page_summary.refresh_summary()
             elif next_widget is self.page_progress:
+                if self.config.partitions.mode == "auto" and not self.config.dry_run:
+                    confirm = QMessageBox.warning(
+                        self,
+                        "Confirmación final de borrado de disco",
+                        f"Se borrarán TODAS las particiones y datos de {self.config.partitions.target_disk} "
+                        f"para instalar Sinergia Linux ({self.config.partitions.root_fs.upper()}).\n\n"
+                        "Esta acción no se puede deshacer. ¿Deseás continuar?",
+                        QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                        QMessageBox.StandardButton.No,
+                    )
+                    if confirm != QMessageBox.StandardButton.Yes:
+                        self.stack.setCurrentIndex(idx)
+                        self._sync_buttons()
+                        return
                 self._in_progress = True
                 self.page_progress.start_installation()
             self._sync_buttons()

@@ -1,24 +1,30 @@
-import subprocess
-import shutil
-# sinergia_installer/ui/page_partitions.py
 import os
+import shutil
+import subprocess
 from PyQt6.QtCore import QProcess
 from PyQt6.QtWidgets import (
+    QButtonGroup,
     QCheckBox,
     QComboBox,
     QFormLayout,
+    QGroupBox,
     QHBoxLayout,
     QLabel,
     QMessageBox,
     QPushButton,
+    QRadioButton,
+    QSpinBox,
     QVBoxLayout,
     QWidget,
 )
 from sinergia_installer.core.disks import (
+    PhysicalDiskInfo,
     has_partition_manager,
     is_uefi_boot,
     list_partitions,
+    list_physical_disks,
     validate_assignments,
+    validate_auto_assignment,
 )
 from sinergia_installer.models.install_config import InstallConfig
 
@@ -28,15 +34,82 @@ class PartitionsPage(QWidget):
         super().__init__()
         self.config = config
         self._pm_process: QProcess | None = None
+        self._disks: list[PhysicalDiskInfo] = []
         self._build_ui()
         self.refresh_partitions()
+        self._sync_mode_ui()
 
     def _build_ui(self) -> None:
         layout = QVBoxLayout(self)
 
-        mode_text = "Modo de arranque detectado: UEFI" if is_uefi_boot() else "Modo de arranque detectado: BIOS / Legacy"
+        mode_text = (
+            "Modo de arranque detectado: UEFI"
+            if is_uefi_boot()
+            else "Modo de arranque detectado: BIOS / Legacy"
+        )
         self.lbl_boot_mode = QLabel(mode_text)
         layout.addWidget(self.lbl_boot_mode)
+
+        mode_box = QGroupBox("Esquema de particionado")
+        mode_lay = QHBoxLayout(mode_box)
+        self.radio_auto = QRadioButton("Particionado automático (borrar disco)")
+        self.radio_manual = QRadioButton("Particionado manual")
+        self.radio_manual.setChecked(True)
+        self.mode_group = QButtonGroup(self)
+        self.mode_group.addButton(self.radio_manual)
+        self.mode_group.addButton(self.radio_auto)
+        mode_lay.addWidget(self.radio_manual)
+        mode_lay.addWidget(self.radio_auto)
+        mode_lay.addStretch()
+        layout.addWidget(mode_box)
+
+        fs_row = QHBoxLayout()
+        fs_row.addWidget(QLabel("Sistema de archivos:"))
+        self.combo_fs = QComboBox()
+        self.combo_fs.addItem("ext4 (clásico y estable)", "ext4")
+        self.combo_fs.addItem("BTRFS (subvolúmenes @ / @home y compresión zstd)", "btrfs")
+        self.combo_fs.currentIndexChanged.connect(self._on_fs_changed)
+        fs_row.addWidget(self.combo_fs)
+        fs_row.addStretch()
+        layout.addLayout(fs_row)
+
+        self.auto_box = QGroupBox("Opciones de particionado automático")
+        auto_layout = QVBoxLayout(self.auto_box)
+        auto_form = QFormLayout()
+
+        self.combo_disk = QComboBox()
+        self.combo_disk.currentIndexChanged.connect(self._on_disk_changed)
+        auto_form.addRow("Disco destino:", self.combo_disk)
+
+        swap_row = QHBoxLayout()
+        self.chk_auto_swap = QCheckBox("Crear partición swap")
+        self.chk_auto_swap.setChecked(True)
+        self.chk_auto_swap.toggled.connect(self._on_auto_swap_toggled)
+        self.spin_swap_gib = QSpinBox()
+        self.spin_swap_gib.setRange(1, 64)
+        self.spin_swap_gib.setValue(4)
+        self.spin_swap_gib.setSuffix(" GiB")
+        swap_row.addWidget(self.chk_auto_swap)
+        swap_row.addWidget(self.spin_swap_gib)
+        swap_row.addStretch()
+        auto_form.addRow("Swap:", swap_row)
+
+        self.chk_auto_home = QCheckBox("Separar /home en partición propia (el resto del disco)")
+        self.chk_auto_home.setChecked(False)
+        auto_form.addRow("/home:", self.chk_auto_home)
+
+        auto_layout.addLayout(auto_form)
+
+        self.lbl_auto_warn = QLabel(
+            "Advertencia: el particionado automático borrará por completo todas las particiones y datos del disco elegido."
+        )
+        self.lbl_auto_warn.setWordWrap(True)
+        self.lbl_auto_warn.setStyleSheet("color: #c62828; font-weight: bold;")
+        auto_layout.addWidget(self.lbl_auto_warn)
+        layout.addWidget(self.auto_box)
+
+        self.manual_box = QGroupBox("Asignación manual de particiones")
+        manual_layout = QVBoxLayout(self.manual_box)
 
         toolbar = QHBoxLayout()
         self.btn_open_pm = QPushButton("Abrir KDE Partition Manager")
@@ -49,7 +122,7 @@ class PartitionsPage(QWidget):
         toolbar.addWidget(self.btn_open_pm)
         toolbar.addWidget(self.btn_refresh)
         toolbar.addStretch()
-        layout.addLayout(toolbar)
+        manual_layout.addLayout(toolbar)
 
         form = QFormLayout()
         self.combo_root = QComboBox()
@@ -74,17 +147,56 @@ class PartitionsPage(QWidget):
         form.addRow("", self.chk_format_home)
         form.addRow("Partición swap (opcional):", self.combo_swap)
         form.addRow("", self.chk_format_swap)
-        layout.addLayout(form)
+        manual_layout.addLayout(form)
+        layout.addWidget(self.manual_box)
 
         self.lbl_error = QLabel("")
         self.lbl_error.setStyleSheet("color: #c62828;")
         layout.addWidget(self.lbl_error)
         layout.addStretch()
 
+        self.radio_auto.toggled.connect(self._sync_mode_ui)
+        self.radio_manual.toggled.connect(self._sync_mode_ui)
+        self._on_fs_changed()
+
+    def _current_fs(self) -> str:
+        return str(self.combo_fs.currentData() or "ext4")
+
+    def _on_fs_changed(self) -> None:
+        fs_label = self._current_fs().upper()
+        self.chk_format_root.setText(f"Formatear partición raíz ({fs_label})")
+        self.chk_format_home.setText(f"Formatear /home ({fs_label})")
+
+    def _on_auto_swap_toggled(self, checked: bool) -> None:
+        self.spin_swap_gib.setEnabled(checked)
+
+    def _on_disk_changed(self) -> None:
+        disk = self._selected_disk()
+        if disk is not None:
+            self.lbl_auto_warn.setText(
+                f"Advertencia: se eliminarán todas las particiones y datos de {disk.path} "
+                f"({disk.model}, {disk.size_human})."
+            )
+        else:
+            self.lbl_auto_warn.setText(
+                "Advertencia: el particionado automático borrará por completo todas las particiones y datos del disco elegido."
+            )
+
+    def _selected_disk(self) -> PhysicalDiskInfo | None:
+        idx = self.combo_disk.currentIndex()
+        if 0 <= idx < len(self._disks):
+            return self._disks[idx]
+        return None
+
+    def _sync_mode_ui(self) -> None:
+        is_auto = self.radio_auto.isChecked()
+        self.auto_box.setVisible(is_auto)
+        self.manual_box.setVisible(not is_auto)
+        self.lbl_error.setText("")
+
     def launch_partition_manager(self) -> None:
         self.lbl_error.setText("")
         self.btn_open_pm.setEnabled(False)
-
         self._pm_fallback_tried = False
         self._launch_partition_manager(use_dbus_session=False)
 
@@ -177,6 +289,16 @@ class PartitionsPage(QWidget):
         self.refresh_partitions()
 
     def refresh_partitions(self) -> None:
+        try:
+            self._disks = list_physical_disks()
+        except Exception:
+            self._disks = []
+
+        self.combo_disk.clear()
+        for d in self._disks:
+            self.combo_disk.addItem(f"{d.path} — {d.model} ({d.size_human}, {d.tran})", d.path)
+        self._on_disk_changed()
+
         partitions = list_partitions()
         self.combo_root.clear()
         self.combo_efi.clear()
@@ -200,11 +322,41 @@ class PartitionsPage(QWidget):
             self.combo_swap.setCurrentIndex(swap_idx)
 
     def save_and_validate(self) -> bool:
+        uefi = is_uefi_boot()
+        fs = self._current_fs()
+
+        if self.radio_auto.isChecked():
+            disk = self._selected_disk()
+            target_disk = disk.path if disk else ""
+            disk_size = disk.size_bytes if disk else 0
+            auto_swap = self.chk_auto_swap.isChecked()
+            swap_gib = int(self.spin_swap_gib.value())
+            sep_home = self.chk_auto_home.isChecked()
+
+            errors = validate_auto_assignment(target_disk, disk_size, auto_swap, swap_gib, sep_home)
+            if errors:
+                self.lbl_error.setText("\n".join(errors))
+                QMessageBox.warning(self, "Revisión de particionado automático", "\n".join(errors))
+                return False
+
+            self.lbl_error.setText("")
+            self.config.partitions.mode = "auto"
+            self.config.partitions.target_disk = target_disk
+            self.config.partitions.auto_swap = auto_swap
+            self.config.partitions.auto_swap_gib = swap_gib
+            self.config.partitions.auto_separate_home = sep_home
+            self.config.partitions.root_fs = fs
+            self.config.partitions.format_root = True
+            self.config.partitions.format_efi = True
+            self.config.partitions.format_home = sep_home
+            self.config.partitions.format_swap = auto_swap
+            self.config.partitions.is_uefi = uefi
+            return True
+
         root_dev = self.combo_root.currentData() or ""
         efi_dev = self.combo_efi.currentData() or ""
         home_dev = self.combo_home.currentData() or ""
         swap_dev = self.combo_swap.currentData() or ""
-        uefi = is_uefi_boot()
 
         errors = validate_assignments(root_dev, efi_dev, home_dev, uefi, swap_dev)
         if errors:
@@ -213,8 +365,11 @@ class PartitionsPage(QWidget):
             return False
 
         self.lbl_error.setText("")
+        self.config.partitions.mode = "manual"
+        self.config.partitions.target_disk = ""
         self.config.partitions.root_device = root_dev
         self.config.partitions.format_root = self.chk_format_root.isChecked()
+        self.config.partitions.root_fs = fs
         self.config.partitions.efi_device = efi_dev
         self.config.partitions.format_efi = self.chk_format_efi.isChecked()
         self.config.partitions.home_device = home_dev

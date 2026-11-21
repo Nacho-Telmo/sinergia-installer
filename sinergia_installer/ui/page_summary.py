@@ -1,6 +1,5 @@
 import shlex
 from PyQt6.QtWidgets import (
-    QCheckBox,
     QGroupBox,
     QLabel,
     QPlainTextEdit,
@@ -36,35 +35,61 @@ class SummaryPage(QWidget):
         plan_layout.addWidget(self.txt_plan)
         layout.addWidget(grp_plan)
 
-
     def refresh_summary(self) -> None:
         c = self.config
         p = c.partitions
+        fs_label = (p.root_fs or "ext4").upper()
 
-        efi_line = (
-            f"{p.efi_device} (formatear: {'Sí' if p.format_efi else 'No'})"
-            if p.is_uefi and p.efi_device
-            else "No aplica (BIOS / sin EFI)"
-        )
-        home_line = (
-            f"{p.home_device} (formatear: {'Sí' if p.format_home else 'No'})"
-            if p.home_device
-            else "Dentro de la partición raíz (/)"
-        )
-        swap_dev = (getattr(p, "swap_device", "") or "").strip()
-        format_swap = bool(getattr(p, "format_swap", True))
-        swap_line = (
-            f"{swap_dev} (formatear: {'Sí' if format_swap else 'No'})"
-            if swap_dev
-            else "Ninguna"
-        )
+        if p.mode == "auto":
+            home_line = (
+                f"Partición separada en {p.target_disk} ({fs_label})"
+                if p.auto_separate_home
+                else (
+                    "Subvolumen @home (BTRFS)"
+                    if p.root_fs == "btrfs"
+                    else "Dentro de la partición raíz (/)"
+                )
+            )
+            swap_line = f"{p.auto_swap_gib} GiB en {p.target_disk}" if p.auto_swap else "Ninguna"
+            disk_lines = (
+                f"<b>Esquema:</b> Automático — <b>Borrará {p.target_disk}</b><br>"
+                f"<b>Sistema de archivos:</b> {fs_label}<br>"
+                f"<b>/home:</b> {home_line}<br>"
+                f"<b>Swap:</b> {swap_line}<br>"
+            )
+        else:
+            efi_line = (
+                f"{p.efi_device} (formatear: {'Sí' if p.format_efi else 'No'})"
+                if p.is_uefi and p.efi_device
+                else "No aplica (BIOS / sin EFI)"
+            )
+            home_line = (
+                f"{p.home_device} ({fs_label}, formatear: {'Sí' if p.format_home else 'No'})"
+                if p.home_device
+                else (
+                    "Subvolumen @home (BTRFS)"
+                    if p.root_fs == "btrfs"
+                    else "Dentro de la partición raíz (/)"
+                )
+            )
+            swap_dev = (getattr(p, "swap_device", "") or "").strip()
+            format_swap = bool(getattr(p, "format_swap", True))
+            swap_line = (
+                f"{swap_dev} (formatear: {'Sí' if format_swap else 'No'})"
+                if swap_dev
+                else "Ninguna"
+            )
+            disk_lines = (
+                f"<b>Esquema:</b> Manual<br>"
+                f"<b>Raíz (/):</b> {p.root_device} ({fs_label}, formatear: {'Sí' if p.format_root else 'No'})<br>"
+                f"<b>EFI (/boot/efi):</b> {efi_line}<br>"
+                f"<b>/home:</b> {home_line}<br>"
+                f"<b>Swap:</b> {swap_line}<br>"
+            )
 
         self.lbl_summary.setText(
             f"<b>Modo arranque:</b> {'UEFI' if p.is_uefi else 'BIOS / Legacy'}<br>"
-            f"<b>Raíz (/):</b> {p.root_device} ({p.root_fs}, formatear: {'Sí' if p.format_root else 'No'})<br>"
-            f"<b>EFI (/boot/efi):</b> {efi_line}<br>"
-            f"<b>/home:</b> {home_line}<br>"
-            f"<b>Swap:</b> {swap_line}<br>"
+            f"{disk_lines}"
             f"<b>Idioma / Teclado / Zona:</b> {c.locale} · {c.keymap} · {c.timezone}<br>"
             f"<b>Usuario / Hostname:</b> {c.username} ({c.full_name}) en <code>{c.hostname}</code>"
             f"{' · <i>sudo sin contraseña</i>' if c.sudo_nopasswd else ''}"
