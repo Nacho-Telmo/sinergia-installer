@@ -84,15 +84,19 @@ class InstallerEngine(QObject):
                 f'FS="{fs}"',
                 'if [ "$FS" = "btrfs" ]; then',
                 '  mkfs.btrfs -f "$ROOT_DEV"',
-                '  if [ -z "$HOME_DEV" ]; then',
-                '    mkdir -p /mnt_btrfs && mount -o subvolid=5 "$ROOT_DEV" /mnt_btrfs',
-                '    btrfs subvolume create /mnt_btrfs/@ && btrfs subvolume create /mnt_btrfs/@home',
-                '    umount /mnt_btrfs && rmdir /mnt_btrfs && mkdir -p /mnt',
-                '    mount -o subvol=@,compress=zstd:1,noatime "$ROOT_DEV" /mnt',
-                '    mkdir -p /mnt/home && mount -o subvol=@home,compress=zstd:1,noatime "$ROOT_DEV" /mnt/home',
-                '  else',
-                '    mkdir -p /mnt && mount -o compress=zstd:1,noatime "$ROOT_DEV" /mnt',
-                '  fi',
+                '  mkdir -p /mnt_btrfs && mount -o subvolid=5 "$ROOT_DEV" /mnt_btrfs',
+                '  btrfs subvolume create /mnt_btrfs/@',
+                '  [ -z "$HOME_DEV" ] && btrfs subvolume create /mnt_btrfs/@home',
+                '  btrfs subvolume create /mnt_btrfs/@log',
+                '  btrfs subvolume create /mnt_btrfs/@cache',
+                '  btrfs subvolume create /mnt_btrfs/@snapshots',
+                '  umount /mnt_btrfs && rmdir /mnt_btrfs && mkdir -p /mnt',
+                '  mount -o subvol=@,compress=zstd:1,noatime "$ROOT_DEV" /mnt',
+                '  mkdir -p /mnt/var/log /mnt/var/cache /mnt/.snapshots',
+                '  [ -z "$HOME_DEV" ] && mkdir -p /mnt/home && mount -o subvol=@home,compress=zstd:1,noatime "$ROOT_DEV" /mnt/home',
+                '  mount -o subvol=@log,compress=zstd:1,noatime "$ROOT_DEV" /mnt/var/log',
+                '  mount -o subvol=@cache,compress=zstd:1,noatime "$ROOT_DEV" /mnt/var/cache',
+                '  mount -o subvol=@snapshots,compress=zstd:1,noatime "$ROOT_DEV" /mnt/.snapshots',
                 'else',
                 '  mkfs.ext4 -F "$ROOT_DEV" && mkdir -p /mnt && mount "$ROOT_DEV" /mnt',
                 'fi',
@@ -104,15 +108,23 @@ class InstallerEngine(QObject):
         else:
             if pr.format_root and pr.root_device:
                 plan.append((f"Formatear raíz ({pr.root_device}) como {fs.upper()}", ["bash", "-c", _format_fs_script(pr.root_device, fs)]))
-            if fs == "btrfs" and pr.format_root and pr.root_device and not pr.home_device:
+            if fs == "btrfs" and pr.format_root and pr.root_device:
                 b_parts = [
                     "set -euo pipefail",
                     f'mkdir -p /mnt_btrfs && mount -o subvolid=5 "{pr.root_device}" /mnt_btrfs',
-                    "btrfs subvolume create /mnt_btrfs/@ && btrfs subvolume create /mnt_btrfs/@home",
+                    "btrfs subvolume create /mnt_btrfs/@",
+                    *([] if pr.home_device else ["btrfs subvolume create /mnt_btrfs/@home"]),
+                    "btrfs subvolume create /mnt_btrfs/@log",
+                    "btrfs subvolume create /mnt_btrfs/@cache",
+                    "btrfs subvolume create /mnt_btrfs/@snapshots",
                     f'umount /mnt_btrfs && rmdir /mnt_btrfs && mkdir -p /mnt && mount -o subvol=@,compress=zstd:1,noatime "{pr.root_device}" /mnt',
-                    f'mkdir -p /mnt/home && mount -o subvol=@home,compress=zstd:1,noatime "{pr.root_device}" /mnt/home',
+                    "mkdir -p /mnt/var/log /mnt/var/cache /mnt/.snapshots",
+                    *([] if pr.home_device else [f'mkdir -p /mnt/home && mount -o subvol=@home,compress=zstd:1,noatime "{pr.root_device}" /mnt/home']),
+                    f'mount -o subvol=@log,compress=zstd:1,noatime "{pr.root_device}" /mnt/var/log',
+                    f'mount -o subvol=@cache,compress=zstd:1,noatime "{pr.root_device}" /mnt/var/cache',
+                    f'mount -o subvol=@snapshots,compress=zstd:1,noatime "{pr.root_device}" /mnt/.snapshots',
                 ]
-                plan.append((f"Crear subvolúmenes BTRFS (@ y @home) en {pr.root_device}", ["bash", "-c", nl.join(b_parts) + nl]))
+                plan.append((f"Crear subvolúmenes BTRFS (@, @home, @log, @cache, @snapshots) en {pr.root_device}", ["bash", "-c", nl.join(b_parts) + nl]))
             else:
                 m_opts = ["-o", "subvol=@,compress=zstd:1,noatime"] if fs == "btrfs" else []
                 plan.append((f"Montar raíz {pr.root_device} en /mnt", ["mount", *m_opts, pr.root_device, "/mnt"]))
