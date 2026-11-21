@@ -105,8 +105,15 @@ rsync -a --chown=root:root \
 
 log "Creando ejecutable y lanzadores .desktop de sinergia-installer..."
 install -d -m 0755 "${AIROOTFS_DIR}/usr/local/bin" "${AIROOTFS_DIR}/usr/share/pixmaps"
-if [[ -f "${AIROOTFS_DIR}/opt/sinergia-installer/sinergia_installer/assets/emblema_sinergia.png" ]]; then
-    install -m 0644         "${AIROOTFS_DIR}/opt/sinergia-installer/sinergia_installer/assets/emblema_sinergia.png"         "${AIROOTFS_DIR}/usr/share/pixmaps/sinergia-installer.png"
+if [[ -f "${AIROOTFS_DIR}/opt/sinergia-installer/sinergia_installer/assets/logo_puntillismo.png" ]]; then
+    install -m 0644 \
+        "${AIROOTFS_DIR}/opt/sinergia-installer/sinergia_installer/assets/logo_puntillismo.png" \
+        "${AIROOTFS_DIR}/usr/share/pixmaps/sinergia-installer.png"
+fi
+if [[ -f "${SNAPSHOT_DIR}/airootfs-assets/sinergia-linux.png" ]]; then
+    install -m 0644 "${SNAPSHOT_DIR}/airootfs-assets/sinergia-linux.png" "${AIROOTFS_DIR}/usr/share/pixmaps/sinergia-linux.png"
+    install -d -m 0755 "${AIROOTFS_DIR}/usr/share/icons/hicolor/256x256/apps"
+    install -m 0644 "${SNAPSHOT_DIR}/airootfs-assets/sinergia-linux.png" "${AIROOTFS_DIR}/usr/share/icons/hicolor/256x256/apps/sinergia-linux.png"
 fi
 printf '%s\n' \
     '#!/usr/bin/env bash' \

@@ -331,5 +331,28 @@ cat <<'EOS' > /etc/xdg/fastfetch/config.jsonc
 }
 EOS
 
+
+# Identidad visual de SinergiaLinux para kinfocenter y el sistema
+if [ -f /usr/share/pixmaps/sinergia-linux.png ]; then
+  install -d -m 0755 /usr/share/icons/hicolor/256x256/apps
+  install -m 0644 /usr/share/pixmaps/sinergia-linux.png /usr/share/icons/hicolor/256x256/apps/sinergia-linux.png
+  command -v gtk-update-icon-cache >/dev/null 2>&1 && gtk-update-icon-cache -f -t /usr/share/icons/hicolor || true
+fi
+
+if [ -f /etc/os-release ]; then
+  if grep -q '^LOGO=' /etc/os-release; then
+    sed -i 's/^LOGO=.*/LOGO=sinergia-linux/' /etc/os-release
+  else
+    echo 'LOGO=sinergia-linux' >> /etc/os-release
+  fi
+fi
+
+install -d -m 0755 /etc/xdg
+cat <<'EOS' > /etc/xdg/kcm-about-distrorc
+[General]
+LogoPath=/usr/share/pixmaps/sinergia-linux.png
+Website=https://nacho-telmo.github.io/sinergia-repo/
+EOS
+
 rm -f /usr/local/bin/sinergia-post-install.sh
 echo "==> Post-instalación de SinergiaLinux completada correctamente."
