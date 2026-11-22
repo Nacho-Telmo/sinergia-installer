@@ -354,6 +354,38 @@ LogoPath=/usr/share/pixmaps/sinergia-linux.png
 Website=https://nacho-telmo.github.io/sinergia-repo/
 EOS
 
+echo "==> Verificando paquete de iconos vortex-dark-icons y modo oscuro..."
+if ! pacman -Qi vortex-dark-icons >/dev/null 2>&1; then
+  pacman -Sy --noconfirm vortex-dark-icons || true
+fi
+
+install -d -m 0755 /etc/xdg /etc/xdg/gtk-3.0 /etc/xdg/gtk-4.0
+cat >| /etc/xdg/kdeglobals <<'EOF_KDEGLOBALS'
+[General]
+ColorScheme=BreezeDark
+Name=Breeze Dark
+shadeSortColumn=true
+
+[KDE]
+LookAndFeelPackage=org.sinergia.desktop
+widgetStyle=Breeze
+
+[Icons]
+Theme=Vortex-Dark
+EOF_KDEGLOBALS
+
+cat >| /etc/xdg/gtk-3.0/settings.ini <<'EOF_GTK3'
+[Settings]
+gtk-icon-theme-name=Vortex-Dark
+gtk-application-prefer-dark-theme=true
+EOF_GTK3
+
+cat >| /etc/xdg/gtk-4.0/settings.ini <<'EOF_GTK4'
+[Settings]
+gtk-icon-theme-name=Vortex-Dark
+gtk-application-prefer-dark-theme=true
+EOF_GTK4
+
 if [ -f /usr/share/plasma/wallpapers/org.kde.image/contents/config/main.xml ] && [ -f /usr/share/backgrounds/sinergia/sinergia2_fhd.jpg ]; then
   sed -i 's|<default></default>|<default>file:///usr/share/backgrounds/sinergia/sinergia2_fhd.jpg</default>|' /usr/share/plasma/wallpapers/org.kde.image/contents/config/main.xml
 fi

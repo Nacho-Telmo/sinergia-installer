@@ -159,6 +159,10 @@ EOF_WP_META
 EOF_LAF_META
 
     cat >| "${AIROOTFS_DIR}/usr/share/plasma/look-and-feel/org.sinergia.desktop/contents/defaults" <<'EOF_LAF_DEF'
+[General]
+iconTheme=Vortex-Dark
+colorScheme=BreezeDark
+
 [Wallpaper]
 defaultWallpaperTheme=Sinergia
 defaultFileSuffix=.jpg
@@ -166,10 +170,33 @@ defaultWidth=1920
 defaultHeight=1080
 EOF_LAF_DEF
 
+    install -d -m 0755         "${AIROOTFS_DIR}/etc/xdg/gtk-3.0"         "${AIROOTFS_DIR}/etc/xdg/gtk-4.0"
+
     cat >| "${AIROOTFS_DIR}/etc/xdg/kdeglobals" <<'EOF_KDEGLOBALS'
+[General]
+ColorScheme=BreezeDark
+Name=Breeze Dark
+shadeSortColumn=true
+
 [KDE]
 LookAndFeelPackage=org.sinergia.desktop
+widgetStyle=Breeze
+
+[Icons]
+Theme=Vortex-Dark
 EOF_KDEGLOBALS
+
+    cat >| "${AIROOTFS_DIR}/etc/xdg/gtk-3.0/settings.ini" <<'EOF_GTK3'
+[Settings]
+gtk-icon-theme-name=Vortex-Dark
+gtk-application-prefer-dark-theme=true
+EOF_GTK3
+
+    cat >| "${AIROOTFS_DIR}/etc/xdg/gtk-4.0/settings.ini" <<'EOF_GTK4'
+[Settings]
+gtk-icon-theme-name=Vortex-Dark
+gtk-application-prefer-dark-theme=true
+EOF_GTK4
 
     cat >| "${AIROOTFS_DIR}/etc/pacman.d/hooks/99-sinergia-wallpaper.hook" <<'EOF_WP_HOOK'
 [Trigger]
