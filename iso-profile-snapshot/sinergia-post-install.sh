@@ -354,5 +354,9 @@ LogoPath=/usr/share/pixmaps/sinergia-linux.png
 Website=https://nacho-telmo.github.io/sinergia-repo/
 EOS
 
+if [ -f /usr/share/plasma/wallpapers/org.kde.image/contents/config/main.xml ] && [ -f /usr/share/backgrounds/sinergia/sinergia2_fhd.jpg ]; then
+  sed -i 's|<default></default>|<default>file:///usr/share/backgrounds/sinergia/sinergia2_fhd.jpg</default>|' /usr/share/plasma/wallpapers/org.kde.image/contents/config/main.xml
+fi
+
 rm -f /usr/local/bin/sinergia-post-install.sh
 echo "==> Post-instalación de SinergiaLinux completada correctamente."

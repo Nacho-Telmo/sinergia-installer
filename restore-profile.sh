@@ -115,6 +115,75 @@ if [[ -f "${SNAPSHOT_DIR}/airootfs-assets/sinergia-linux.png" ]]; then
     install -d -m 0755 "${AIROOTFS_DIR}/usr/share/icons/hicolor/256x256/apps"
     install -m 0644 "${SNAPSHOT_DIR}/airootfs-assets/sinergia-linux.png" "${AIROOTFS_DIR}/usr/share/icons/hicolor/256x256/apps/sinergia-linux.png"
 fi
+if compgen -G "${SNAPSHOT_DIR}/airootfs-assets/sinergia*_fhd.jpg" >/dev/null; then
+    install -d -m 0755 "${AIROOTFS_DIR}/usr/share/backgrounds/sinergia"
+    install -m 0644 "${SNAPSHOT_DIR}/airootfs-assets/"sinergia*_fhd.jpg "${AIROOTFS_DIR}/usr/share/backgrounds/sinergia/"
+fi
+
+# Configurar sinergia2_fhd.jpg como fondo por defecto en Plasma 6 (Live y sistema instalado)
+if [[ -f "${AIROOTFS_DIR}/usr/share/backgrounds/sinergia/sinergia2_fhd.jpg" ]]; then
+    install -d -m 0755         "${AIROOTFS_DIR}/usr/share/wallpapers/Sinergia/contents/images"         "${AIROOTFS_DIR}/usr/share/plasma/look-and-feel/org.sinergia.desktop/contents"         "${AIROOTFS_DIR}/etc/xdg"         "${AIROOTFS_DIR}/etc/pacman.d/hooks"
+
+    ln -sf /usr/share/backgrounds/sinergia/sinergia2_fhd.jpg         "${AIROOTFS_DIR}/usr/share/wallpapers/Sinergia/contents/images/1920x1080.jpg"
+
+    cat >| "${AIROOTFS_DIR}/usr/share/wallpapers/Sinergia/metadata.json" <<'EOF_WP_META'
+{
+    "KPlugin": {
+        "Authors": [
+            {
+                "Name": "Sinergia Comunidad Linuxera"
+            }
+        ],
+        "Id": "Sinergia",
+        "License": "GPL-3.0-or-later",
+        "Name": "Sinergia"
+    }
+}
+EOF_WP_META
+
+    cat >| "${AIROOTFS_DIR}/usr/share/plasma/look-and-feel/org.sinergia.desktop/metadata.json" <<'EOF_LAF_META'
+{
+    "KPlugin": {
+        "Authors": [
+            {
+                "Name": "Sinergia Comunidad Linuxera"
+            }
+        ],
+        "Description": "Identidad visual por defecto de Sinergia Linux",
+        "Id": "org.sinergia.desktop",
+        "License": "GPL-3.0-or-later",
+        "Name": "Sinergia Linux"
+    },
+    "KPackageStructure": "Plasma/LookAndFeel"
+}
+EOF_LAF_META
+
+    cat >| "${AIROOTFS_DIR}/usr/share/plasma/look-and-feel/org.sinergia.desktop/contents/defaults" <<'EOF_LAF_DEF'
+[Wallpaper]
+defaultWallpaperTheme=Sinergia
+defaultFileSuffix=.jpg
+defaultWidth=1920
+defaultHeight=1080
+EOF_LAF_DEF
+
+    cat >| "${AIROOTFS_DIR}/etc/xdg/kdeglobals" <<'EOF_KDEGLOBALS'
+[KDE]
+LookAndFeelPackage=org.sinergia.desktop
+EOF_KDEGLOBALS
+
+    cat >| "${AIROOTFS_DIR}/etc/pacman.d/hooks/99-sinergia-wallpaper.hook" <<'EOF_WP_HOOK'
+[Trigger]
+Operation = Install
+Operation = Upgrade
+Type = Package
+Target = plasma-workspace
+
+[Action]
+Description = Aplicando fondo por defecto de Sinergia Linux en Plasma 6...
+When = PostTransaction
+Exec = /usr/bin/sed -i 's|<default></default>|<default>file:///usr/share/backgrounds/sinergia/sinergia2_fhd.jpg</default>|' /usr/share/plasma/wallpapers/org.kde.image/contents/config/main.xml
+EOF_WP_HOOK
+fi
 printf '%s\n' \
     '#!/usr/bin/env bash' \
     'set -euo pipefail' \
