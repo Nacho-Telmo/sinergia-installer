@@ -390,5 +390,114 @@ if [ -f /usr/share/plasma/wallpapers/org.kde.image/contents/config/main.xml ] &&
   sed -i 's|<default></default>|<default>file:///usr/share/backgrounds/sinergia/sinergia2_fhd.jpg</default>|' /usr/share/plasma/wallpapers/org.kde.image/contents/config/main.xml
 fi
 
-rm -f /usr/local/bin/sinergia-post-install.sh
-echo "==> Post-instalación de SinergiaLinux completada correctamente."
+echo "==> Quitando Discover y fijando Preferencias, Dolphin y Konsole en la barra de tareas..."
+if [ -x /usr/local/bin/sinergia-patch-panel ]; then
+  /usr/local/bin/sinergia-patch-panel
+fi
+
+
+echo "==> Configurando autostart de sinergia-welcome..."
+mkdir -p /etc/xdg/autostart
+cat >| /etc/xdg/autostart/sinergia-welcome.desktop <<'EOF_WELCOME_POST'
+[Desktop Entry]
+Type=Application
+Name=Sinergia Welcome
+Comment=Pantalla de bienvenida de Sinergia Linux
+Exec=/usr/bin/sinergia-welcome
+Terminal=false
+OnlyShowIn=KDE;
+X-KDE-autostart-phase=2
+EOF_WELCOME_POST
+chmod 0644 /etc/xdg/autostart/sinergia-welcome.desktop
+
+echo "==> Aplicando icono de Kickoff y lanzadores de barra con kwriteconfig6 en usuarios..."
+if command -v kwriteconfig6 >/dev/null 2>&1; then
+  for u_home in /root /home/*; do
+    [ -d "${u_home}" ] || continue
+    rc_file="${u_home}/.config/plasma-org.kde.plasma.desktop-appletsrc"
+    [ -f "${rc_file}" ] || continue
+    u_owner="$(stat -c '%U:%G' "${u_home}")"
+    while IFS=: read -r c_id a_id plugin; do
+      [ -n "${c_id}" ] && [ -n "${a_id}" ] || continue
+      if [ "${plugin}" = "org.kde.plasma.kickoff" ]; then
+        kwriteconfig6 --file "${rc_file}"           --group Containments --group "${c_id}" --group Applets --group "${a_id}" --group Configuration --group General           --key icon "/usr/share/pixmaps/sinergia-linux.png"
+      elif [ "${plugin}" = "org.kde.plasma.icontasks" ]; then
+        kwriteconfig6 --file "${rc_file}"           --group Containments --group "${c_id}" --group Applets --group "${a_id}" --group Configuration --group General           --key launchers "applications:systemsettings.desktop,applications:org.kde.dolphin.desktop,applications:org.kde.konsole.desktop"
+      fi
+    done < <(python3 - "${rc_file}" <<'PY_POST_PARSE'
+import pathlib, re, sys
+
+lines = pathlib.Path(sys.argv[1]).read_text(encoding="utf-8", errors="replace").splitlines()
+cur_c = cur_a = None
+for line in lines:
+    s = line.strip()
+    m = re.fullmatch(r"\[Containments\]\[(\d+)\]\[Applets\]\[(\d+)\]", s)
+    if m:
+        cur_c, cur_a = m.group(1), m.group(2)
+    elif s.startswith("[Containments]["):
+        cur_c = cur_a = None
+    elif s.startswith("plugin=") and cur_c and cur_a:
+        print(f"{cur_c}:{cur_a}:{s.split('=', 1)[1]}")
+PY_POST_PARSE
+)
+    chown -R "${u_owner}" "${u_home}/.config" 2>/dev/null || true
+  done
+fi
+
+
+echo "==> Fijando plantilla defaultPanel/contents/layout.js para nuevos usuarios..."
+if [ -f /usr/share/plasma/layout-templates/org.kde.plasma.desktop.defaultPanel/contents/layout.js ]; then
+  python3 - /usr/share/plasma/layout-templates/org.kde.plasma.desktop.defaultPanel/contents/layout.js <<'PY_JS_POST'
+import pathlib, re, sys
+p = pathlib.Path(sys.argv[1])
+txt = p.read_text(encoding="utf-8")
+
+kickoff_rep = (
+    'var sinergiaKickoff = panel.addWidget("org.kde.plasma.kickoff");\n'
+    'sinergiaKickoff.currentConfigGroup = ["General"];\n'
+    'sinergiaKickoff.writeConfig("icon", "/usr/share/pixmaps/sinergia-linux.png");'
+)
+icontasks_rep = (
+    'var sinergiaTasks = panel.addWidget("org.kde.plasma.icontasks");\n'
+    'sinergiaTasks.currentConfigGroup = ["General"];\n'
+    'sinergiaTasks.writeConfig("launchers", ['
+    '"applications:systemsettings.desktop", '
+    '"applications:org.kde.dolphin.desktop", '
+    '"applications:org.kde.konsole.desktop"]);'
+)
+
+if "sinergiaKickoff" not in txt:
+    txt = re.sub(r'panel\.addWidget\("org\.kde\.plasma\.kickoff"\);?', kickoff_rep, txt, count=1)
+if "sinergiaTasks" not in txt:
+    txt = re.sub(r'panel\.addWidget\("org\.kde\.plasma\.icontasks"\);?', icontasks_rep, txt, count=1)
+
+p.write_text(txt, encoding="utf-8")
+PY_JS_POST
+fi
+
+
+echo "==> Configurando tema KSplash Sinergia por defecto..."
+mkdir -p /etc/skel/.config
+cat >| /etc/skel/.config/ksplashrc <<'EOF_POST_KSPLASH_RC'
+[KSplash]
+Theme=org.sinergia.desktop
+Engine=KSplashQML
+EOF_POST_KSPLASH_RC
+chmod 0644 /etc/skel/.config/ksplashrc
+
+for u_home in /home/*; do
+  [ -d "${u_home}" ] || continue
+  u_owner="$(stat -c '%U:%G' "${u_home}")"
+  mkdir -p "${u_home}/.config"
+  cp -f /etc/skel/.config/ksplashrc "${u_home}/.config/ksplashrc"
+  chown -R "${u_owner}" "${u_home}/.config" 2>/dev/null || true
+done
+
+
+mkdir -p /etc/xdg
+cat >| /etc/xdg/ksplashrc <<'EOF_POST_XDG_KSPLASH'
+[KSplash]
+Theme=org.sinergia.desktop
+Engine=KSplashQML
+EOF_POST_XDG_KSPLASH
+chmod 0644 /etc/xdg/ksplashrc

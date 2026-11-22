@@ -1,0 +1,16 @@
+[SddmGreeterTheme]
+Name=Sinergia Linux
+Description=Tema oscuro oficial de Sinergia Linux para SDDM (Plasma 6)
+Author=Sinergia Comunidad Linuxera
+Copyright=(c) 2026 Sinergia Comunidad Linuxera
+License=GPL-3.0-or-later
+Type=sddm-theme
+Version=1.0.0
+Website=https://github.com/Nacho-Telmo/sinergia-installer
+Screenshot=preview.jpg
+MainScript=Main.qml
+ConfigFile=theme.conf
+TranslationsDirectory=translations
+Theme-Id=sinergia-sddm
+Theme-API=2.0
+QtVersion=6
