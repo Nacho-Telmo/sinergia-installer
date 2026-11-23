@@ -449,7 +449,8 @@ cat >| "${AIROOTFS_DIR}/usr/local/bin/sinergia-live-panel-fix" <<'EOF_LIVE_PANEL
 set -uo pipefail
 
 RC="${HOME}/.config/plasma-org.kde.plasma.desktop-appletsrc"
-MARKER="/tmp/sinergia-live-panel-fix.done"
+id "live" &>/dev/null || exit 0
+MARKER="${HOME}/.config/.sinergia-panel-initialized"
 ICON_PATH="/usr/share/pixmaps/sinergia-linux.png"
 LAUNCHERS="applications:systemsettings.desktop,applications:org.kde.dolphin.desktop,applications:org.kde.konsole.desktop"
 

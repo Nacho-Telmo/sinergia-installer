@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls as QQC2
+import Qt5Compat.GraphicalEffects
 import org.kde.plasma.components as PlasmaComponents3
 import org.kde.kirigami as Kirigami
 
@@ -19,6 +20,15 @@ Item {
     property int userIndex: userModel.lastIndex >= 0 ? userModel.lastIndex : 0
     property int sessionIndex: sessionModel.lastIndex >= 0 ? sessionModel.lastIndex : 0
     property string errorMessage: ""
+
+    readonly property string currentUserName: {
+        var u = userModel.data(userModel.index(userIndex, 0), Qt.UserRole + 1)
+        return u ? u : ""
+    }
+    readonly property string currentUserIcon: {
+        var ic = userModel.data(userModel.index(userIndex, 0), Qt.UserRole + 4)
+        return ic ? ic : ""
+    }
 
     Image {
         id: wallpaper
@@ -93,33 +103,73 @@ Item {
             anchors.margins: 28
             spacing: 14
 
-            // Emblema / Título Sinergia Linux
-            Rectangle {
+            // Avatar circular del usuario (con fallback al logo de Sinergia)
+            Item {
                 Layout.alignment: Qt.AlignHCenter
-                width: 72
-                height: 72
-                radius: 36
-                color: Qt.rgba(0.16, 0.50, 0.73, 0.22)
-                border.color: root.accentColor
-                border.width: 2
+                width: 88
+                height: 88
 
-                Image {
-                    id: logoImg
-                    anchors.centerIn: parent
-                    width: 44
-                    height: 44
-                    source: "/usr/share/pixmaps/sinergia-logo.png"
-                    fillMode: Image.PreserveAspectFit
-                    visible: status === Image.Ready
-                }
+                Rectangle {
+                    id: avatarCircle
+                    anchors.fill: parent
+                    radius: 44
+                    color: Qt.rgba(0.16, 0.50, 0.73, 0.22)
+                    border.color: root.accentColor
+                    border.width: 2
 
-                Text {
-                    anchors.centerIn: parent
-                    visible: logoImg.status !== Image.Ready
-                    text: "S"
-                    color: root.textPrimary
-                    font.pixelSize: 32
-                    font.bold: true
+                    // Foto de perfil del usuario recortada en círculo
+                    Item {
+                        id: userAvatarWrapper
+                        anchors.fill: parent
+                        anchors.margins: 3
+                        visible: userAvatarImg.status === Image.Ready
+
+                        Image {
+                            id: userAvatarImg
+                            anchors.fill: parent
+                            source: {
+                                if (root.currentUserIcon !== "") return root.currentUserIcon
+                                if (root.currentUserName !== "") return "file:///var/lib/AccountsService/icons/" + root.currentUserName
+                                return ""
+                            }
+                            fillMode: Image.PreserveAspectCrop
+                            smooth: true
+                            visible: false
+                        }
+
+                        Rectangle {
+                            id: avatarMask
+                            anchors.fill: parent
+                            radius: width / 2
+                            visible: false
+                        }
+
+                        OpacityMask {
+                            anchors.fill: parent
+                            source: userAvatarImg
+                            maskSource: avatarMask
+                        }
+                    }
+
+                    // Respaldo: logo de Sinergia Linux si no hay foto de usuario
+                    Image {
+                        id: logoImg
+                        anchors.centerIn: parent
+                        width: 48
+                        height: 48
+                        source: "/usr/share/pixmaps/sinergia-logo.png"
+                        fillMode: Image.PreserveAspectFit
+                        visible: userAvatarImg.status !== Image.Ready && status === Image.Ready
+                    }
+
+                    Text {
+                        anchors.centerIn: parent
+                        visible: userAvatarImg.status !== Image.Ready && logoImg.status !== Image.Ready
+                        text: "S"
+                        color: root.textPrimary
+                        font.pixelSize: 34
+                        font.bold: true
+                    }
                 }
             }
 
@@ -139,7 +189,7 @@ Item {
                 textRole: "realName"
                 currentIndex: root.userIndex
                 onCurrentIndexChanged: root.userIndex = currentIndex
-                displayText: currentText !== "" ? currentText : (userModel.data(userModel.index(currentIndex, 0), Qt.UserRole + 1) || "Usuario")
+                displayText: currentText !== "" ? currentText : (root.currentUserName || "Usuario")
             }
 
             // Campo de contraseña
@@ -289,7 +339,7 @@ Item {
 
     function doLogin() {
         root.errorMessage = ""
-        var uname = userModel.data(userModel.index(userBox.currentIndex, 0), Qt.UserRole + 1)
+        var uname = root.currentUserName
         if (!uname || uname === "") {
             uname = userBox.currentText
         }

@@ -18,6 +18,8 @@ if id "live" &>/dev/null; then
 fi
 rm -f /etc/sudoers.d/live-nopasswd
 rm -f /etc/sddm.conf.d/autologin.conf
+rm -f /etc/xdg/autostart/sinergia-panel-fix.desktop /usr/local/bin/sinergia-live-panel-fix /etc/xdg/plasma-org.kde.plasma.desktop-appletsrc
+install -d -m 0755 /var/lib/AccountsService/icons /var/lib/AccountsService/users
 
 systemctl disable choose-mirror.service livecd-alsa-unmuter.service livecd-talk.service pacman-init.service 2>/dev/null || true
 rm -f /etc/systemd/system/choose-mirror.service \
@@ -146,6 +148,7 @@ EOF_SINERGIA_CONF
 fi
 
 pacman -Sy --noconfirm sinergia-keyring || true
+pacman -S --needed --noconfirm base-devel qt5-base os-prober ntfs-3g || true
 
 # Configurar mapa de teclado en español para consola, X11 y Wayland/KDE
 KEYMAP="${KEYMAP:-es}"
@@ -171,8 +174,18 @@ fi
 mkinitcpio -P
 
 if [[ -f /etc/default/grub ]]; then
-    sed -i 's/^GRUB_DISTRIBUTOR=.*/GRUB_DISTRIBUTOR="SinergiaLinux"/' /etc/default/grub
+    sed -i 's/^GRUB_DISTRIBUTOR=.*/GRUB_DISTRIBUTOR="Sinergia"/' /etc/default/grub
     sed -i 's/^GRUB_DISABLE_LINUX_UUID=true/#GRUB_DISABLE_LINUX_UUID=true/' /etc/default/grub
+    grep -q '^GRUB_DISABLE_SUBMENU=' /etc/default/grub && sed -i 's/^GRUB_DISABLE_SUBMENU=.*/GRUB_DISABLE_SUBMENU=y/' /etc/default/grub || echo 'GRUB_DISABLE_SUBMENU=y' >> /etc/default/grub
+    grep -q '^GRUB_DISABLE_RECOVERY=' /etc/default/grub && sed -i 's/^#*GRUB_DISABLE_RECOVERY=.*/GRUB_DISABLE_RECOVERY="true"/' /etc/default/grub || echo 'GRUB_DISABLE_RECOVERY="true"' >> /etc/default/grub
+    grep -q '^GRUB_DISABLE_OS_PROBER=' /etc/default/grub && sed -i 's/^#*GRUB_DISABLE_OS_PROBER=.*/GRUB_DISABLE_OS_PROBER=true/' /etc/default/grub || echo 'GRUB_DISABLE_OS_PROBER=true' >> /etc/default/grub
+fi
+chmod -x /etc/grub.d/25_bli /etc/grub.d/31_efi_bootnext 2>/dev/null || true
+chmod +x /etc/grub.d/30_uefi-firmware /etc/grub.d/30_os-prober 2>/dev/null || true
+if grep -q '^#\?GRUB_DISABLE_OS_PROBER=' /etc/default/grub; then
+    sed -i 's/^#\?GRUB_DISABLE_OS_PROBER=.*/GRUB_DISABLE_OS_PROBER=false/' /etc/default/grub
+else
+    echo 'GRUB_DISABLE_OS_PROBER=false' >> /etc/default/grub
 fi
 
 if ! grep -qE '[[:space:]]/[[:space:]]' /etc/fstab; then
@@ -228,7 +241,16 @@ for line in lines:
         line = re.sub(r"\broot=[^ \t]*", f"root={target_root}", line)
     updated.append(line)
 
-cfg_path.write_text("".join(updated), encoding="utf-8")
+content = "".join(updated)
+# Limpiar sufijo redundante ", with Linux linux" dejando solo "Sinergia Linux"
+content = content.replace("Sinergia Linux, with Linux linux", "Sinergia Linux")
+# Eliminar cualquier bloque menuentry residual de tipo (EFI BootNext)
+content = re.sub(
+    r"\n?menuentry\s+'[^']*\(EFI BootNext\)'[^\{]*\{[\s\S]*?\n\}\n?",
+    "\n",
+    content,
+)
+cfg_path.write_text(content, encoding="utf-8")
 FIX_GRUB
 fi
 # Identidad de Sinergia Linux en /etc/os-release y logo global de fastfetch
