@@ -83,6 +83,9 @@ rm -f /etc/systemd/system/multi-user.target.wants/systemd-networkd.service \
       /etc/systemd/system/sockets.target.wants/systemd-networkd.socket \
       /etc/systemd/system/dbus-org.freedesktop.network1.service
 rm -rf /etc/systemd/network
+systemctl disable --now systemd-networkd.service systemd-networkd.socket systemd-networkd-wait-online.service 2>/dev/null || true
+rm -rf /etc/systemd/network /etc/systemd/system/systemd-networkd-wait-online.service.d
+systemctl mask systemd-networkd.service systemd-networkd.socket systemd-networkd-wait-online.service
 systemctl enable NetworkManager.service
 systemctl enable sddm.service
 

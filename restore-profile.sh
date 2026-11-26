@@ -89,6 +89,15 @@ rm -rf "${AIROOTFS_DIR}/etc/systemd/network"
 install -d -m 0755 "${AIROOTFS_DIR}/etc/systemd/system/multi-user.target.wants"
 ln -sf /usr/lib/systemd/system/sddm.service "${AIROOTFS_DIR}/etc/systemd/system/display-manager.service"
 ln -sf /usr/lib/systemd/system/NetworkManager.service "${AIROOTFS_DIR}/etc/systemd/system/multi-user.target.wants/NetworkManager.service"
+rm -f "${AIROOTFS_DIR}/etc/systemd/system/multi-user.target.wants/systemd-networkd.service" \
+  "${AIROOTFS_DIR}/etc/systemd/system/network-online.target.wants/systemd-networkd-wait-online.service" \
+  "${AIROOTFS_DIR}/etc/systemd/system/sockets.target.wants/systemd-networkd.socket" \
+  "${AIROOTFS_DIR}/etc/systemd/system/dbus-org.freedesktop.network1.service"
+rm -rf "${AIROOTFS_DIR}/etc/systemd/network" "${AIROOTFS_DIR}/etc/systemd/system/systemd-networkd-wait-online.service.d"
+install -d -m 0755 "${AIROOTFS_DIR}/etc/systemd/system"
+for u in systemd-networkd.service systemd-networkd.socket systemd-networkd-wait-online.service; do
+ln -sf /dev/null "${AIROOTFS_DIR}/etc/systemd/system/${u}"
+done
 
 log "Copiando sinergia-installer a ${AIROOTFS_DIR}/opt/sinergia-installer..."
 INSTALLER_DEST="${AIROOTFS_DIR}/opt/sinergia-installer"
