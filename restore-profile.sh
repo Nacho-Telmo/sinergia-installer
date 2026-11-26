@@ -422,9 +422,9 @@ printf '%s\n' \
     '[Desktop Entry]' \
     'Type=Application' \
     'Version=1.0' \
-    'Name=Instalar Sinergia Linux' \
+    'Name=Instalar Sinergia Linux (Arkea)' \
     'GenericName=Instalador del Sistema' \
-    'Comment=Asistente de instalación de Sinergia Linux' \
+    'Comment=Arkea — Asistente de instalación de Sinergia Linux' \
     'Exec=/usr/local/bin/sinergia-installer' \
     'Icon=/usr/share/pixmaps/sinergia-installer.png' \
     'StartupWMClass=sinergia-installer' \
