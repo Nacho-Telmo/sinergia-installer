@@ -80,7 +80,12 @@ if [[ -f "${SNAPSHOT_DIR}/autologin.conf" ]]; then
     rm -rf "${AIROOTFS_DIR}/etc/systemd/system/getty@tty1.service.d"
 fi
 
-log "Habilitando servicios gráficos y de red en airootfs..."
+log "Habilitando servicios gráficos y de red en airootfs (solo NetworkManager)..."
+rm -f "${AIROOTFS_DIR}/etc/systemd/system/multi-user.target.wants/systemd-networkd.service" \
+      "${AIROOTFS_DIR}/etc/systemd/system/network-online.target.wants/systemd-networkd-wait-online.service" \
+      "${AIROOTFS_DIR}/etc/systemd/system/sockets.target.wants/systemd-networkd.socket" \
+      "${AIROOTFS_DIR}/etc/systemd/system/dbus-org.freedesktop.network1.service"
+rm -rf "${AIROOTFS_DIR}/etc/systemd/network"
 install -d -m 0755 "${AIROOTFS_DIR}/etc/systemd/system/multi-user.target.wants"
 ln -sf /usr/lib/systemd/system/sddm.service "${AIROOTFS_DIR}/etc/systemd/system/display-manager.service"
 ln -sf /usr/lib/systemd/system/NetworkManager.service "${AIROOTFS_DIR}/etc/systemd/system/multi-user.target.wants/NetworkManager.service"

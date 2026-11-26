@@ -77,6 +77,12 @@ fi
 chmod 0440 /etc/sudoers.d/10-wheel
 
 echo "==> [6/7] Habilitando servicios del sistema (NetworkManager y SDDM)..."
+systemctl disable --now systemd-networkd.service systemd-networkd.socket systemd-networkd-wait-online.service 2>/dev/null || true
+rm -f /etc/systemd/system/multi-user.target.wants/systemd-networkd.service \
+      /etc/systemd/system/network-online.target.wants/systemd-networkd-wait-online.service \
+      /etc/systemd/system/sockets.target.wants/systemd-networkd.socket \
+      /etc/systemd/system/dbus-org.freedesktop.network1.service
+rm -rf /etc/systemd/network
 systemctl enable NetworkManager.service
 systemctl enable sddm.service
 
