@@ -287,7 +287,7 @@ Exec = /usr/bin/install -m 0644 /usr/local/share/sinergia/os-release /etc/os-rel
 EOS
 
 cat <<'EOS' > /usr/share/sinergia/fastfetch-logo.txt
-⠀⠀⡀⠀⢀⡄⠀⣄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀              ⡀⠀⢀⡄⠀⣄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⢰⢺⡄⢠⡇⢀⡾⣇⢀⡿⣆⣠⡞⠀⢀⡄⠀⠀⠀⠀⠀⠀⠀⠀⠀
 ⠀⠀⠀⠀⠀⣀⡀⠸⡆⢸⠀⢿⣟⢀⣾⢃⢹⣾⠀⢻⣏⣤⠾⢻⣠⢞⣤⠀⠀⠀⠀⠀⠀⠀
 ⠀⠀⠀⠀⢺⣬⠙⡟⠷⣾⣦⣌⣿⣾⠷⣼⡄⢿⣤⣶⢿⡅⣠⡞⢡⡾⠁⣠⠇⠀⠀⠀⠀⠀
