@@ -18,7 +18,7 @@ from sinergia_installer.ui.page_user import UserPage
 class MainWindow(QMainWindow):
     def __init__(self) -> None:
         super().__init__()
-        self.setWindowTitle("Sinergia Installer — Sinergia Linux")
+        self.setWindowTitle("Arkea — Sinergia Linux")
         self.resize(840, 650)
         self.config = InstallConfig(dry_run=False)
         self.engine = InstallerEngine(self)

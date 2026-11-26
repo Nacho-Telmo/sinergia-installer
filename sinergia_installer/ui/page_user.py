@@ -61,7 +61,7 @@ class UserPage(QWidget):
         self.lbl_root_pw_match = QLabel("")
 
         self.txt_hostname = QLineEdit()
-        self.txt_hostname.setPlaceholderText("Ej. sinergia-plasma")
+        self.txt_hostname.setPlaceholderText("Ej. sinergialinux")
 
         self.chk_use_sudo = QCheckBox("El usuario usará sudo (grupo wheel), pidiendo contraseña")
         self.chk_use_sudo.setChecked(True)

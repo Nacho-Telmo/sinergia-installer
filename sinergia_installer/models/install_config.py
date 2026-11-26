@@ -26,7 +26,7 @@ class InstallConfig:
     locale: str = "es_AR.UTF-8"
     keymap: str = "us"
     timezone: str = "America/Argentina/Buenos_Aires"
-    hostname: str = "sinergia-arch"
+    hostname: str = "sinergialinux"
     full_name: str = ""
     username: str = ""
     password: str = ""

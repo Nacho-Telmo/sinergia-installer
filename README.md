@@ -1,6 +1,6 @@
-# Sinergia Installer
+# Arkea Installer
 
-Instalador gráfico desarrollado en **Python** y **PyQt6** para **Sinergia Linux** (distribución basada en Arch Linux creada por **Sinergia Comunidad Linuxera**).
+**Arkea**, instalador gráfico desarrollado en **Python** y **PyQt6** para **Sinergia Linux** (distribución basada en Arch Linux creada por **Sinergia Comunidad Linuxera**).
 
 Diseñado bajo software libre (**GPL-3.0**) para ofrecer una instalación limpia, directa y sin dependencias pesadas, desacoplada de rutas rígidas del entorno Live.
 
